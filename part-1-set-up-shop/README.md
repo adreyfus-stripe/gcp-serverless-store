@@ -1,4 +1,4 @@
-# Part 1 - Setup shop! 
+# Part 1 - Set up shop! 
 
 In this part you will learn how to use the Stripe Dashboard to create a basic product inventory. In our example we will use a fictional illustration studio that wants to license digital copies of their illustrations online.
 
