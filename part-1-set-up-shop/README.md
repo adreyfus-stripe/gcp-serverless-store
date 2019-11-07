@@ -12,7 +12,7 @@ Stripe lets you create a simple product inventory in the Dashboard. By creating 
 
 ## Create your product page
 
-A product page should let the customer pick a SKU to purhcase, and redirect to Checkout with the SKU (or SKUs!) the customer selected:
+A product page should let the customer pick a SKU to purchase, and redirect to Checkout with the SKU (or SKUs!) the customer selected:
 
 ```
 stripe
@@ -27,8 +27,8 @@ Checkout will display a responsive and internationalized checkout page with your
 
 <img src="../stripe-checkout-demo.png" alt="A screenshot of Stripe Checkout product page">
 
-## Setup a webhook to fulfill the order
+## Set up a webhook to fulfill the order
 
-You can't guarentee that a customer will be redirected to your success page -- there's always a chance they will close the browser session before the redirect happens. 
-That's why you need an asynchroneous process to complete any business-critical processes, such as sending an email confirmation or starting a shipping process.
+You can't guarantee that a customer will be redirected to your success page -- there's always a chance they will close the browser session before the redirect happens. 
+That's why you need an asynchronous process to complete any business-critical processes, such as sending an email confirmation or starting a shipping process.
 Let's learn about that in Part 2! 
