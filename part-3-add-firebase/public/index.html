@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+
+    <title>Custom design and Illustration - Tarpaulin Design Co.</title>
+    <meta
+      name="description"
+      content="Order custom illustrations, letter art, brand identity, and design."
+    />
+
+    <meta name="og:title" content="Custom design and Illustration" />
+    <meta name="og:type" content="website" />
+    <meta name="og:url" content="" />
+    <meta name="og:image" content="" />
+    <meta name="og:site_name" content="Tarpaulin Design Co." />
+    <meta
+      name="og:description"
+      content="Order custom illustrations, letter art, brand identity, and design."
+    />
+    <meta
+      name="msapplication-square144x144logo"
+      content="img/icons/ms-icon-144x144.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="img/icons/favicon-32x32.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="img/icons/apple-icon-180x180.png"
+    />
+
+    <link href="./normalize.css" rel="stylesheet" />
+    <link href="./global.css" rel="stylesheet" />
+    <script src="https://js.stripe.com/v3"></script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css" />
+  </head>
+
+  <body>
+    <main>
+    <section class="img-preview">
+        <img src="img/product/desktop.png" id="preview" />
+      </section>
+      <section>
+        <p class="best-seller">
+          <img
+            src="img/best-seller.svg"
+            width="50px"
+            alt="A ribbon with a star"
+          />Best seller!
+        </p>
+        <h2>Make It Happen Illustration</h2>
+        <p>
+          Give your customers a motivational message with this inspiring
+          illustration. Comes in three sizes to share across your favorite
+          online mediums.
+        </p>
+        <p>Select your dimensions:</p>
+        <select class="sr-select">
+          <option
+            data-id="sku_FsWm2bRjTafCXX"
+            data-amount="599"
+            data-img="img/product/desktop.png"
+          >
+            Desktop
+          </option>
+          <option
+            data-id="sku_FsWmdVFpBamIo5"
+            data-amount="599"
+            data-img="img/product/mobile.png"
+          >
+            Mobile
+          </option>
+          <option
+            data-id="sku_FsWmjyL4n94gt8"
+            data-amount="299"
+            data-img="img/product/social.png"
+          >
+            Square (for Social)
+          </option>
+        </select>
+        <div class="total">
+          <button class="mdc-button mdc-button--raised" id="pay-button">
+            <span class="mdc-button__label"
+              >Purchase for <span id="total-amount">$9.99</span></span
+            >
+          </button>
+        </div>
+      </section>
+      <section>
+        <div id="app">
+          <div id="firebaseui-auth-container"></div>
+          <div v-if="currentUser">
+            <button class="mdc-button mdc-button--raised" id="sign-out">Sign out</button>
+          </div>
+      </section>
+    </main>
+    <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="/__/firebase/7.4.0/firebase-app.js"></script>
+  
+    <!-- Add Firebase products that you want to use -->
+    <script src="/__/firebase/7.4.0/firebase-auth.js"></script>
+    <script src="/__/firebase/7.4.0/firebase-firestore.js"></script>
+    <script src="/__/firebase/init.js"></script>
+    <script>
+      // Replace with your Stripe SKUs
+      var order = { id: "sku_FsWm2bRjTafCXX" };
+      // Replace with your Stripe publishable key
+      var stripe = Stripe("pk_test_12345");
+      var domain = window.location.hostname;
+      var uiConfig = {
+        callbacks: {
+          signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+            // User successfully signed in.
+            // Return type determines whether we continue the redirect automatically
+            // or whether we leave that to developer to handle.
+            return false;
+          },
+          uiShown: function() {
+            // The widget is rendered.
+            // Hide the loader.
+            document.getElementById('loader').style.display = 'none';
+          }
+        },
+        // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
+        signInFlow: 'popup',
+        signInOptions: [
+          firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        ],
+      };
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+      // check for a current user
+      // update button text based on auth state
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          var showSignOut = document.getElementById("sign-out");
+                showSignOut.textContent = "Sign Out";
+        } else {
+          var showSignIn = document.getElementById("sign-out");
+                showSignIn.textContent = "Sign In";
+        }
+      });
+
+      document
+        .getElementById("sign-out")
+        .addEventListener("click", function() {
+          // if there is a current user
+          // button used to log out
+          if (firebase.auth().currentUser) {
+            firebase.auth().signOut().then(function() {
+              // Sign-out successful.
+            }).catch(function(error) {
+              // An error happened.
+            });
+          } else {
+            // display login screen
+            ui.start('#firebaseui-auth-container', uiConfig);
+          }
+        });
+
+      document
+        .getElementById("pay-button")
+        .addEventListener("click", function() {
+          stripe
+            .redirectToCheckout({
+              items: [{ sku: order.id, quantity: 1 }],
+
+              // Do not rely on the redirect to the successUrl for fulfilling
+              // purchases, customers may not always reach the success_url after
+              // a successful payment.
+              successUrl: domain + "/completed.html",
+              cancelUrl: domain + "/canceled.html"
+            })
+            .then(function(result) {
+              if (result.error) {
+                // If `redirectToCheckout` fails due to a browser or network
+                // error, display the localized error message to your customer.
+                var displayError = document.getElementById("error-message");
+                displayError.textContent = result.error.message;
+              }
+            });
+        });
+
+      document
+        .querySelector("select")
+        .addEventListener("change", function(evt) {
+          const data = document.querySelector("select :checked").dataset;
+
+          order.id = data.id;
+          var formatter = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD"
+          });
+
+          document.getElementById(
+            "total-amount"
+          ).textContent = formatter.format(data.amount / 100);
+
+          document.getElementById("preview").setAttribute("src", data.img);
+        });
+    </script>
+  </body>
+</html>
