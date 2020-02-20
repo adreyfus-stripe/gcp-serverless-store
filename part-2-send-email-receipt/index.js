@@ -10,23 +10,25 @@ const nodemailer = require("nodemailer");
 const GMAIL_EMAIL = process.env.GMAIL_EMAIL;
 const GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
 const mailTransport = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  secure: true,
+  post: 465,
   auth: {
     user: GMAIL_EMAIL,
     pass: GMAIL_PASSWORD
   }
 });
 
-const MERCHANT_NAME = "Tarpaulin Design Co.";
+const MERCHANT_NAME = "Super sweet socks";
 
-/* 
- * Sends the confirmation email to the customer 
+/*
+ * Sends the confirmation email to the customer
  * @param {Object} checkoutSession - a Stripe CheckoutSession
  * https://stripe.com/docs/api/checkout/sessions
  */
-async function sendConfirmationEmail(checkoutSesstion) {
+async function sendConfirmationEmail(checkoutSession) {
   const paymentIntent = await stripe.paymentIntents.retrieve(
-    checkoutSesstion.payment_intent
+    checkoutSession.payment_intent
   );
 
   // Get information about the payment
@@ -34,17 +36,24 @@ async function sendConfirmationEmail(checkoutSesstion) {
     return charge.status === "succeeded";
   });
 
-  const billingDetails = successfulCharge.billing_details;
+  const billingDetails = successfulCharge.billing_details || {};
 
   // Format email
   const mailOptions = {
     from: `${MERCHANT_NAME} ${GMAIL_EMAIL}`,
-    to: billingDetails.email
+    to: billingDetails.email || "adrienne.dreyfus@gmail.com",
+    subject: "Your sock pattern",
+    text: `Hey ${billingDetails.name || ""}! Thanks for purchasing.`,
+    attachments: [
+      {
+        filename: "sock-pattern.pdf",
+        path:
+          "https://storage.googleapis.com/stripe-sock-store/BasicToeUpCrochetedSock.pdf",
+        contentType: "application/pdf"
+      }
+    ]
   };
 
-  mailOptions.subject = `Your illustrations`;
-  mailOptions.text = `Hey ${billingDetails.name ||
-    ""}! Thanks for purchasing.`;
   return mailTransport.sendMail(mailOptions);
 }
 
@@ -71,9 +80,14 @@ exports.confirm = async (req, res) => {
 
   switch (eventType) {
     case "checkout.session.completed":
-      sendConfirmationEmail(data);
-      return 200;
+      // The payment is complete! Fulfill the order
+      sendConfirmationEmail(data.object);
+      return res.sendStatus(200);
+    case "charge.dispute.created":
+    // Oh no! A customer disputed the payment with their bank
+    // Read up on how to handle disputes and fraud with the help of Stripe
+    // https://stripe.com/docs/disputes
     default:
-      return 200;
+      return res.sendStatus(200);
   }
 };
