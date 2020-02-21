@@ -10,41 +10,54 @@ const nodemailer = require("nodemailer");
 const GMAIL_EMAIL = process.env.GMAIL_EMAIL;
 const GMAIL_PASSWORD = process.env.GMAIL_PASSWORD;
 const mailTransport = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  secure: true,
+  post: 465,
   auth: {
     user: GMAIL_EMAIL,
     pass: GMAIL_PASSWORD
   }
 });
 
-const MERCHANT_NAME = "Tarpaulin Design Co.";
-
-/* 
- * Sends the confirmation email to the customer 
+/*
+ * Sends the confirmation email to the customer
  * @param {Object} checkoutSession - a Stripe CheckoutSession
  * https://stripe.com/docs/api/checkout/sessions
  */
-async function sendConfirmationEmail(checkoutSesstion) {
+async function sendConfirmationEmail(checkoutSession) {
   const paymentIntent = await stripe.paymentIntents.retrieve(
-    checkoutSesstion.payment_intent
+    checkoutSession.payment_intent
   );
+
+  const filePath = checkoutSession.metadata.file;
 
   // Get information about the payment
   const successfulCharge = paymentIntent.charges.data.filter(charge => {
     return charge.status === "succeeded";
   });
 
-  const billingDetails = successfulCharge.billing_details;
+  const billingDetails = successfulCharge.billing_details || {};
+
+  if (!billingDetails.email) {
+    console.log("Did not collect customer email address");
+    return;
+  }
 
   // Format email
   const mailOptions = {
-    from: `${MERCHANT_NAME} ${GMAIL_EMAIL}`,
-    to: billingDetails.email
+    from: `American Sock Market - ${GMAIL_EMAIL}`,
+    to: billingDetails.email,
+    subject: "Your sock pattern from American Sock Market",
+    text: `Hey ${billingDetails.name || ""}! Thanks for purchasing.`,
+    attachments: [
+      {
+        filename: "sock-pattern.pdf",
+        path: filePath,
+        contentType: "application/pdf"
+      }
+    ]
   };
 
-  mailOptions.subject = `Your illustrations`;
-  mailOptions.text = `Hey ${billingDetails.name ||
-    ""}! Thanks for purchasing.`;
   return mailTransport.sendMail(mailOptions);
 }
 
@@ -71,9 +84,14 @@ exports.confirm = async (req, res) => {
 
   switch (eventType) {
     case "checkout.session.completed":
-      sendConfirmationEmail(data);
-      return 200;
+      // The payment is complete! Fulfill the order
+      sendConfirmationEmail(data.object);
+      return res.sendStatus(200);
+    case "charge.dispute.created":
+    // Oh no! A customer disputed the payment with their bank
+    // Read up on how to handle disputes and fraud with the help of Stripe
+    // https://stripe.com/docs/disputes
     default:
-      return 200;
+      return res.sendStatus(200);
   }
 };

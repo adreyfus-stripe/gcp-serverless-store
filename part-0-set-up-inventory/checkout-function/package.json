@@ -1,0 +1,10 @@
+{
+    "name": "checkout-session",
+    "version": "0.0.1",
+    "dependencies": {
+      "stripe": "^7.1.0",
+      "@google-cloud/firestore": "0.17.0",
+      "semver": "^5.5.1"
+    }
+  }
+  
