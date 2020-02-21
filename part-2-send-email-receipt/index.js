@@ -19,8 +19,6 @@ const mailTransport = nodemailer.createTransport({
   }
 });
 
-const MERCHANT_NAME = "Super sweet socks";
-
 /*
  * Sends the confirmation email to the customer
  * @param {Object} checkoutSession - a Stripe CheckoutSession
@@ -31,6 +29,8 @@ async function sendConfirmationEmail(checkoutSession) {
     checkoutSession.payment_intent
   );
 
+  const filePath = checkoutSession.metadata.file;
+
   // Get information about the payment
   const successfulCharge = paymentIntent.charges.data.filter(charge => {
     return charge.status === "succeeded";
@@ -38,17 +38,21 @@ async function sendConfirmationEmail(checkoutSession) {
 
   const billingDetails = successfulCharge.billing_details || {};
 
+  if (!billingDetails.email) {
+    console.log("Did not collect customer email address");
+    return;
+  }
+
   // Format email
   const mailOptions = {
-    from: `${MERCHANT_NAME} ${GMAIL_EMAIL}`,
-    to: billingDetails.email || "adrienne.dreyfus@gmail.com",
-    subject: "Your sock pattern",
+    from: `American Sock Market - ${GMAIL_EMAIL}`,
+    to: billingDetails.email,
+    subject: "Your sock pattern from American Sock Market",
     text: `Hey ${billingDetails.name || ""}! Thanks for purchasing.`,
     attachments: [
       {
         filename: "sock-pattern.pdf",
-        path:
-          "https://storage.googleapis.com/stripe-sock-store/BasicToeUpCrochetedSock.pdf",
+        path: filePath,
         contentType: "application/pdf"
       }
     ]
